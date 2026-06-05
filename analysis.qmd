@@ -12,30 +12,54 @@ execute:
 library(tidyverse)
 library(readxl)
 
-births_tibble <- read_excel("data/us_births_1994_2014.xlsx") |> 
-  mutate(day_of_week = factor(day_of_week, 
-                              levels = c("Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"), 
-                              ordered = TRUE))
+nba_recruits <- read_excel("data/nba_recruits.xlsx")
 
-births_model <- lm(births ~ factor(year) + factor(month) + day_of_week, data = births_tibble)
+basketball_tibble <- nba_recruits |> 
+  mutate(tier = factor(tier, 
+                       levels = c("Never played", "Brief career", "Solid career", "All-Star level", "Superstar"), 
+                       ordered = TRUE)) |> 
+  mutate(recruit_group = factor(recruit_group, 
+                                levels = c("#1–10", "#11–25", "#26–50", "#51–100", "Outside top 100"), 
+                                ordered = TRUE))
 
-births_adjusted <- births_tibble |> 
-  mutate(pct_resid = (resid(births_model) / mean(births)) * 100)
-
-calendar_resid <- births_adjusted |> 
-  filter(!(month == 2 & date_of_month == 29)) |> 
-  group_by(month, date_of_month) |> 
-  summarize(mean_pct_resid = mean(pct_resid), .groups = "drop") |> 
-  mutate(calendar_date = make_date(year = 2001, month = month, day = date_of_month))
-
-calendar_resid |> 
-  ggplot(aes(x = calendar_date, y = mean_pct_resid)) +
-  geom_line() +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  annotate("text", x = as.Date("2001-01-01"), y = -22, label = "New Year's", vjust = 1) +
-  annotate("text", x = as.Date("2001-07-04"), y = -22, label = "July 4th", vjust = 1) +
-  annotate("text", x = as.Date("2001-12-25"), y = -38, label = "Christmas", vjust = 1)
+basketball_tibble |> 
+  filter(!is.na(rank) & !is.na(top_mean_wa)) |> 
+  ggplot(aes(x = rank, y = top_mean_wa)) +
+  geom_point(aes(color = tier), alpha = 0.6) +
+  geom_smooth(method = "lm", color = "black", se = FALSE) +
+  geom_text(data = basketball_tibble |> 
+              filter(name %in% c("LeBron James", "Chris Paul", "Kevin Durant", "Kawhi Leonard")),
+            aes(label = name), 
+            vjust = -0.5, 
+            hjust = 0.5,
+            size = 3) +
+  theme_minimal()
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
